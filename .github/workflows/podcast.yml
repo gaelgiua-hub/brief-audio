@@ -1,0 +1,82 @@
+name: Construire le podcast
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "episodes/**"
+      - "scripts/**"
+      - "static/**"
+      - ".github/workflows/podcast.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # publier les MP3 dans la release « audio »
+  pages: write
+  id-token: write
+
+concurrency:
+  group: podcast
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  SITE_URL: https://gaelgiua-hub.github.io/brief-audio
+  TTS_VOICE: fr-FR-HenriNeural
+  KEEP: "40"   # nombre d'épisodes gardés dans le flux
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Outils
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q ffmpeg)
+          pip install -q edge-tts gTTS
+
+      - name: Release de stockage des MP3
+        run: |
+          gh release view audio >/dev/null 2>&1 || \
+            gh release create audio --title "Épisodes audio" \
+              --notes "Stockage des MP3 du podcast. Ne pas supprimer."
+          gh release view audio --json assets -q '.assets[].name' > existing.txt || true
+
+      - name: Synthèse des nouveaux épisodes
+        run: |
+          python scripts/build.py missing --existing existing.txt > todo.txt
+          if [ -s todo.txt ]; then
+            python scripts/build.py synth $(cat todo.txt) --out new
+            gh release upload audio new/*.mp3 --clobber
+          else
+            echo "Aucun nouvel épisode."
+          fi
+
+      - name: Site et flux
+        run: |
+          mkdir -p site/audio
+          for id in $(python scripts/build.py keep --keep "$KEEP"); do
+            if [ -f "new/$id.mp3" ]; then cp "new/$id.mp3" site/audio/
+            else gh release download audio -p "$id.mp3" -D site/audio --clobber || echo "absent : $id"
+            fi
+          done
+          python scripts/build.py site --site site --keep "$KEEP"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
