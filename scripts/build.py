@@ -29,7 +29,7 @@ STATIC_DIR = ROOT / "static"
 PARIS = ZoneInfo("Europe/Paris")
 
 SITE_URL = os.environ.get("SITE_URL", "https://gaelgiua-hub.github.io/brief-audio").rstrip("/")
-VOICE = os.environ.get("TTS_VOICE", "fr-FR-HenriNeural")
+VOICE = os.environ.get("TTS_VOICE", "fr-FR-VivienneMultilingualNeural")
 RATE = os.environ.get("TTS_RATE", "+0%")
 SHOW_TITLE = "Le brief audio de Gaël"
 SHOW_DESC = ("Le brief marchés du matin et le récap de la semaine, en audio. "

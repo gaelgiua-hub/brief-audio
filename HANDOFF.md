@@ -42,11 +42,12 @@ Podcast privé (non référencé) qui lit à voix haute la veille boursière de 
 
 Le texte est lu tel quel : pas d'URL, pas de Markdown, abréviations écrites en toutes lettres.
 Un épisode déjà publié n'est pas re-synthétisé (le MP3 existe dans la release).
-Pour le refaire : supprimer l'asset `<id>.mp3` de la release `audio`, puis relancer le workflow.
+Pour le refaire : Actions → « Construire le podcast » → Run workflow, en indiquant l'identifiant dans « refaire »
+(ou supprimer l'asset `<id>.mp3` de la release `audio`, puis relancer le workflow).
 
 ## Réglages
 
-Dans `podcast.yml` (bloc `env`) : `TTS_VOICE` (ex. `fr-FR-DeniseNeural`, `fr-FR-VivienneMultilingualNeural`),
+Dans `podcast.yml` (bloc `env`) : `TTS_VOICE` (actuelle : `fr-FR-VivienneMultilingualNeural` ; autres : `fr-FR-DeniseNeural`, `fr-FR-HenriNeural`),
 `KEEP` (épisodes gardés dans le flux). Pochette : `static/cover.png`.
 
 ## Points d'attention

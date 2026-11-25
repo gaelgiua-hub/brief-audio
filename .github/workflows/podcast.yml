@@ -9,6 +9,11 @@ on:
       - "static/**"
       - ".github/workflows/podcast.yml"
   workflow_dispatch:
+    inputs:
+      refaire:
+        description: "Épisodes à refaire avec la voix actuelle (identifiants séparés par des espaces)"
+        required: false
+        default: ""
 
 permissions:
   contents: write   # publier les MP3 dans la release « audio »
@@ -22,7 +27,7 @@ concurrency:
 env:
   GH_TOKEN: ${{ github.token }}
   SITE_URL: https://gaelgiua-hub.github.io/brief-audio
-  TTS_VOICE: fr-FR-HenriNeural
+  TTS_VOICE: fr-FR-VivienneMultilingualNeural
   KEEP: "40"   # nombre d'épisodes gardés dans le flux
 
 jobs:
@@ -48,8 +53,14 @@ jobs:
           gh release view audio --json assets -q '.assets[].name' > existing.txt || true
 
       - name: Synthèse des nouveaux épisodes
+        env:
+          REFAIRE: ${{ inputs.refaire }}
         run: |
           python scripts/build.py missing --existing existing.txt > todo.txt
+          for id in $REFAIRE; do
+            if [ -f "episodes/$id.json" ]; then echo "$id" >> todo.txt; else echo "inconnu : $id"; fi
+          done
+          sort -u todo.txt -o todo.txt
           if [ -s todo.txt ]; then
             python scripts/build.py synth $(cat todo.txt) --out new
             gh release upload audio new/*.mp3 --clobber
